@@ -100,6 +100,28 @@ const INITIAL_PRODUCTS = [
   }
 ];
 
+const INITIAL_LAND_PLOTS = [
+  { id: 'P-101', name: 'North Parcel Alpha', zone: 'Gulbarga Sector A', moisture: '42%', status: 'Optimal', health: 94, owner: 'Siddaram BN', activeCrop: 'Premium Basmati Rice', npk: 'N:45 P:30 K:40' },
+  { id: 'P-102', name: 'East Ridge Basin', zone: 'Gulbarga Sector B', moisture: '38%', status: 'Optimal', health: 89, owner: 'Siddaram BN', activeCrop: 'Organic Toor Dal (Pigeon Peas)', npk: 'N:20 P:45 K:35' },
+  { id: 'P-103', name: 'Valley Lowlands', zone: 'Hubli Cluster West', moisture: '21%', status: 'Needs Irrigation', health: 74, owner: 'Rajesh M.', activeCrop: 'Premium Sharbati Wheat', npk: 'N:50 P:35 K:30' },
+  { id: 'P-104', name: 'Southern Terrace A', zone: 'Sullia Foothills', moisture: '55%', status: 'High Moisture', health: 91, owner: 'Anand Kumar', activeCrop: 'Organic Tomatoes', npk: 'N:35 P:40 K:45' },
+  { id: 'P-105', name: 'Southern Terrace B', zone: 'Sullia Foothills', moisture: '51%', status: 'Optimal', health: 95, owner: 'Anand Kumar', activeCrop: 'Crisp Ooty Carrots', npk: 'N:30 P:30 K:50' },
+  { id: 'P-106', name: 'Highlands Orchard Node', zone: 'Hubli Frontier East', moisture: '30%', status: 'Moderate', health: 82, owner: 'Rajesh M.', activeCrop: 'Kashmiri Apples', npk: 'N:20 P:25 K:50' }
+];
+
+// Initial mock orders displaying Phase 5 Smart Escrow statuses and weather telemetry ties
+const INITIAL_ORDERS = [
+  {
+    orderId: 'AMH-9081',
+    cropName: 'Premium Basmati Rice',
+    amount: 13699,
+    region: 'Gulbarga, Karnataka',
+    escrowStatus: 'Held in Escrow Vault 🔒',
+    insuranceCover: 'Active (Weather Indexed)',
+    claimPayout: '₹0 (No Anomaly Detected)'
+  }
+];
+
 export default function App() {
   // Authentication Gateway States
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -118,6 +140,13 @@ export default function App() {
 
   // Video Inspection Player Modal State
   const [activeVideoUrl, setActiveVideoUrl] = useState(null);
+
+  // GIS Map Interactive Active Target Plot State
+  const [selectedPlot, setSelectedPlot] = useState(INITIAL_LAND_PLOTS[0]);
+
+  // Phase 5 Smart Escrow Contracts & Weather Hazard Tracking States
+  const [orders, setOrders] = useState(INITIAL_ORDERS);
+  const [simulatedWeatherAlert, setSimulatedWeatherAlert] = useState('Clear Weather / Standard Yield');
 
   // Payment Gateway Interface Overlays
   const [showPaymentOverlay, setShowPaymentOverlay] = useState(false);
@@ -283,6 +312,7 @@ export default function App() {
   const handleOrderSubmission = (e) => {
     e.preventDefault();
     if (paymentMethod === 'cod') {
+      executeOrderCreationLog();
       setCheckoutStep('success');
     } else {
       setShowPaymentOverlay(true);
@@ -294,9 +324,55 @@ export default function App() {
     setTimeout(() => {
       setGatewayProcessing(false);
       setShowPaymentOverlay(false);
+      executeOrderCreationLog();
       setCheckoutStep('success');
       setToast({ show: true, message: '💳 Payment Captured & Settled Successfully via Razorpay Node.', type: 'success' });
     }, 2500);
+  };
+
+  // Phase 5 helper compiling order data directly into smart contract arrays
+  const executeOrderCreationLog = () => {
+    const primaryCrop = cart[0] || { name: 'Direct Field Procurement Batch', location: 'Gulbarga, Karnataka' };
+    const newOrderContract = {
+      orderId: `AMH-${Math.floor(1000 + Math.random() * 9000)}`,
+      cropName: primaryCrop.name,
+      amount: totalPayable,
+      region: primaryCrop.location,
+      escrowStatus: paymentMethod === 'cod' ? 'COD Pending Gate 📦' : 'Held in Escrow Vault 🔒',
+      insuranceCover: 'Active (Weather Indexed)',
+      claimPayout: '₹0 (No Anomaly Detected)'
+    };
+    setOrders([newOrderContract, ...orders]);
+  };
+
+  // Phase 5 Climate Trigger Core Rule: Updates smart escrow arrays based on simulated weather stress
+  const triggerClimateIncidentSimulation = (anomalyType) => {
+    setSimulatedWeatherAlert(anomalyType);
+    
+    if (anomalyType === 'Clear Weather / Standard Yield') {
+      setOrders(prev => prev.map(o => ({ ...o, claimPayout: '₹0 (No Anomaly Detected)', escrowStatus: o.escrowStatus.includes('COD') ? o.escrowStatus : 'Held in Escrow Vault 🔒' })));
+      setToast({ show: true, message: '☀️ Satellite logs reset. Standard crop market conditions restored.', type: 'info' });
+      return;
+    }
+
+    setOrders(prevOrders => 
+      prevOrders.map(order => {
+        if (order.escrowStatus.includes('COD')) return order; // Insurance bypass for non-cleared digital funds
+
+        let dynamicRefund = Math.round(order.amount * 0.40); // 40% automated weather mitigation payback
+        return {
+          ...order,
+          escrowStatus: 'Insurance Triggered 🛡️',
+          claimPayout: `₹${dynamicRefund.toLocaleString('en-IN')} (Refund Disbursed)`
+        };
+      })
+    );
+
+    setToast({ 
+      show: true, 
+      message: `🚨 Weather Alert: ${anomalyType}! Smart Escrow re-allocated risk mitigation claims automatically.`, 
+      type: 'warning' 
+    });
   };
 
   const resetOrderWorkflow = () => {
@@ -312,6 +388,13 @@ export default function App() {
   });
 
   const maxPriceInCatalog = Math.max(...products.map(p => p.price));
+
+  const pivotToMarketplaceFilter = (cropTitle) => {
+    setSearchQuery(cropTitle);
+    setSelectedCategory('All');
+    setActiveTab('marketplace');
+    setToast({ show: true, message: `🔍 Switched filters to inspect target crop payload matching plot selection.`, type: 'info' });
+  };
 
   // ================= RENDER INTERFACES =================
 
@@ -445,8 +528,8 @@ export default function App() {
               <span className="font-bold text-xl tracking-wide text-white">Agri Market Hub</span>
             </div>
             <div className="flex space-x-1 items-center">
-              <button onClick={() => setActiveTab('marketplace')} className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'marketplace' ? 'bg-emerald-900/60 font-bold border-b-2 border-amber-400 text-white' : 'hover:bg-emerald-700/50 text-emerald-100'}`}>Market</button>
-              <button onClick={() => setActiveTab('analytics')} className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'analytics' ? 'bg-emerald-900/60 font-bold border-b-2 border-amber-400 text-white' : 'hover:bg-emerald-700/50 text-emerald-100'}`}>📈 Analytics</button>
+              <button onClick={() => { setActiveTab('marketplace'); setSearchQuery(''); }} className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'marketplace' ? 'bg-emerald-900/60 font-bold border-b-2 border-amber-400 text-white' : 'hover:bg-emerald-700/50 text-emerald-100'}`}>Market</button>
+              <button onClick={() => setActiveTab('analytics')} className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'analytics' ? 'bg-emerald-900/60 font-bold border-b-2 border-amber-400 text-white' : 'hover:bg-emerald-700/50 text-emerald-100'}`}>📈 Analytics & Risk</button>
               <button onClick={() => setActiveTab('list-crop')} className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'list-crop' ? 'bg-emerald-900/60 font-bold border-b-2 border-amber-400 text-white' : 'hover:bg-emerald-700/50 text-emerald-100'}`}>👨‍🌾 Farmer Portal</button>
               <button onClick={() => setActiveTab('profile')} className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'profile' ? 'bg-emerald-900/60 font-bold border-b-2 border-amber-400 text-white' : 'hover:bg-emerald-700/50 text-emerald-100'}`}>🏢 Profile</button>
               <button onClick={() => { setActiveTab('cart'); setCheckoutStep('review'); }} className="ml-1 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 font-black text-xs flex items-center space-x-1 shadow-md">
@@ -467,7 +550,7 @@ export default function App() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div>
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">Direct Farm Marketplace</h2>
-                <p className="text-xs text-slate-500">Welcome, <span className="font-bold text-emerald-700">{authForm.username}</span>. Monitor verified asset metrics with localized land quality parameters.</p>
+                <p className="text-xs text-slate-500">Welcome, <span className="font-bold text-emerald-700">{authForm.username}</span>. Monitor verified asset metrics with escrow insurance guarantees.</p>
               </div>
               <div className="w-full sm:w-72">
                 <input type="text" placeholder="🔍 Search crops or locations..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-white shadow-sm outline-none" />
@@ -544,29 +627,182 @@ export default function App() {
           </div>
         )}
 
-        {/* VIEW 2: ANALYTICS */}
+        {/* VIEW 2: ANALYTICS & PHASE 5 INSURANCE HEDGING CONTRACT MATRIX */}
         {activeTab === 'analytics' && (
           <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Market Logistics Analytics Dashboard</h2>
-              <p className="text-xs text-slate-500">Real-time agricultural asset summary metrics compiled straight from active open-market ledger listings.</p>
+            
+            {/* PHASE 5 INTRO CORNER */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-gradient-to-r from-slate-900 to-slate-800 text-white p-5 rounded-2xl shadow-md border border-slate-700 gap-4">
+              <div className="space-y-0.5">
+                <span className="bg-amber-400 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded uppercase tracking-wider">
+                  Phase 5 Security Layer Activated
+                </span>
+                <h3 className="text-base font-black tracking-tight">Weather-Index Climate Hedging & Smart Escrow Console</h3>
+                <p className="text-[11px] text-slate-400">Simulate satellite telemetry incidents to stress-test decentralized fund distributions.</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  'Clear Weather / Standard Yield',
+                  'Severe Regional Drought 🏜️',
+                  'Flash Monsoon Flood Anomaly 🌧️',
+                  'Thermal Heatwave Stress 🔥'
+                ].map((condition) => (
+                  <button 
+                    key={condition} 
+                    onClick={() => triggerClimateIncidentSimulation(condition)}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all shadow-sm ${
+                      simulatedWeatherAlert === condition 
+                        ? 'bg-amber-400 text-slate-900 ring-2 ring-amber-300' 
+                        : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'
+                    }`}
+                  >
+                    {condition.split(' ')[0]} {condition.includes('/') ? 'Standard' : condition.split(' ').slice(1).join(' ')}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-gradient-to-br from-emerald-800 to-emerald-900 text-white p-4 rounded-xl shadow border border-emerald-700">
-                <span className="text-[10px] uppercase tracking-wider font-bold opacity-75">Gross Local Market Valuation</span>
-                <div className="text-2xl font-black mt-1">₹{totalMarketValuation.toLocaleString('en-IN')}</div>
+            {/* LIVE ACTIVE ESCROW SMART CONTRACT TABLE */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+              <div>
+                <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  🔐 Smart Escrow Multi-Signature Vault Ledger
+                </h4>
+                <p className="text-[10px] text-slate-400">Funds are isolated securely in the app repository context until logistics tracking signatures match criteria.</p>
               </div>
-              <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
-                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Average Mandi Crop Valuation</span>
-                <div className="text-2xl font-black text-slate-800 mt-1">₹{averageCropPrice.toLocaleString('en-IN')}</div>
-              </div>
-              <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
-                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Consolidated Active Stock Volume</span>
-                <div className="text-2xl font-black text-slate-800 mt-1">{totalStockVolume} Units</div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-400 font-bold border-b border-slate-100 text-[10px] uppercase tracking-wider">
+                      <th className="p-3">Contract ID</th>
+                      <th className="p-3">Crop Variety</th>
+                      <th className="p-3">Escrow Amount</th>
+                      <th className="p-3">Regional Domain</th>
+                      <th className="p-3">Escrow State Status</th>
+                      <th className="p-3">Indexed Policy Payout</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50 font-medium text-slate-700">
+                    {orders.map((order) => (
+                      <tr key={order.orderId} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="p-3 font-mono text-slate-400">{order.orderId}</td>
+                        <td className="p-3 font-bold text-slate-900">{order.cropName}</td>
+                        <td className="p-3 text-emerald-800 font-bold">₹{order.amount.toLocaleString('en-IN')}</td>
+                        <td className="p-3 text-slate-500">📍 {order.region}</td>
+                        <td className="p-3">
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
+                            order.escrowStatus.includes('Insurance') ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                            order.escrowStatus.includes('Held') ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                            'bg-amber-50 text-amber-700 border-amber-200'
+                          }`}>
+                            {order.escrowStatus}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <span className={`font-mono text-[11px] font-bold ${order.claimPayout.includes('Refund') ? 'text-rose-600 animate-pulse' : 'text-slate-400'}`}>
+                            {order.claimPayout}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
 
+            {/* INTEGRATED GIS LAND PARCEL VIEW */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                    🗺️ Regional GIS Farm Land Parcel Matrix
+                  </h3>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Click on a survey tract block to run satellite moisture data and cross-reference grower logs live.</p>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800 shadow-inner min-h-[250px]">
+                  {INITIAL_LAND_PLOTS.map((plot) => {
+                    const isSelected = selectedPlot?.id === plot.id;
+                    return (
+                      <button key={plot.id} onClick={() => setSelectedPlot(plot)} className={`p-4 rounded-xl text-left border flex flex-col justify-between transition-all relative overflow-hidden group ${
+                        isSelected 
+                          ? 'bg-emerald-900/40 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)] text-white' 
+                          : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                      }`}>
+                        <div className="absolute top-0 right-0 w-2 h-2 rounded-bl-lg bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div className="space-y-1">
+                          <span className="text-[9px] font-mono opacity-50 block tracking-widest">{plot.id}</span>
+                          <span className="text-xs font-bold block truncate tracking-tight">{plot.name}</span>
+                        </div>
+                        <div className="mt-4 pt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px]">
+                          <span className="opacity-60 truncate">{plot.zone.split(' ')[0]}</span>
+                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black tracking-wide ${
+                            plot.status.includes('Optimal') ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' :
+                            plot.status.includes('High') ? 'bg-teal-950 text-teal-400 border border-teal-800' :
+                            'bg-amber-950 text-amber-400 border border-amber-800'
+                          }`}>{plot.status}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div className="border-b pb-3 space-y-1">
+                    <span className="text-[9px] font-mono bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded border">
+                      PARCEL LOG READOUT
+                    </span>
+                    <h3 className="text-base font-black text-slate-900 tracking-tight mt-1">{selectedPlot.name}</h3>
+                    <p className="text-[10px] text-slate-400">Registry Region Cluster: {selectedPlot.zone}</p>
+                  </div>
+
+                  <div className="py-4 space-y-3.5 text-xs">
+                    <div className="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
+                      <span className="text-slate-400 font-medium">Assigned Surveyor</span>
+                      <span className="font-bold text-slate-800">{selectedPlot.owner}</span>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-slate-500">Soil Moisture Integrity</span>
+                        <span className="font-bold text-emerald-700">{selectedPlot.moisture}</span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border shadow-inner">
+                        <div style={{ width: selectedPlot.moisture }} className="bg-gradient-to-r from-blue-500 to-emerald-500 h-full"></div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-slate-500">Plot Health Analytics Matrix</span>
+                        <span className="font-bold text-slate-900">{selectedPlot.health}%</span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border shadow-inner">
+                        <div style={{ width: `${selectedPlot.health}%` }} className="bg-gradient-to-r from-amber-400 to-emerald-500 h-full"></div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-amber-50/80 to-amber-100/30 p-3 rounded-xl border border-amber-200/50 space-y-1 shadow-inner">
+                      <span className="text-[9px] uppercase font-black text-amber-800 tracking-wider block">🔬 Spectrograph NPK Balance</span>
+                      <span className="font-mono text-slate-800 font-bold tracking-wide">{selectedPlot.npk}</span>
+                    </div>
+
+                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-center space-y-1 shadow-sm">
+                      <span className="text-[10px] uppercase text-slate-400 font-bold block">Active Crop Yield</span>
+                      <span className="font-bold text-slate-900 block">{selectedPlot.activeCrop}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button onClick={() => pivotToMarketplaceFilter(selectedPlot.activeCrop)} className="w-full mt-4 bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-xl text-xs tracking-wide transition-all shadow active:scale-[0.98]">
+                  Locate Batch in Store ➔
+                </button>
+              </div>
+            </div>
+
+            {/* PRICING SPECTRUM */}
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
               <h3 className="text-sm font-bold text-slate-900 mb-6 uppercase tracking-wider">📊 Pricing Disparity Spectrum</h3>
               <div className="space-y-4">
@@ -847,7 +1083,7 @@ export default function App() {
                       </label>
                       <label className={`p-3 rounded-lg border flex items-center space-x-2 cursor-pointer transition-all ${paymentMethod === 'upi_qr' ? 'bg-emerald-50/70 border-emerald-500 font-bold text-emerald-900' : 'border-slate-100 hover:bg-slate-50'}`}>
                         <input type="radio" name="payMethod" checked={paymentMethod === 'upi_qr'} onChange={() => setPaymentMethod('upi_qr')} />
-                        <span>UPI Mobile QR / Gateway Overlay</span>
+                        <span>UPI Mobile QR / Escrow Gateway</span>
                       </label>
                       <label className={`p-3 rounded-lg border flex items-center space-x-2 cursor-pointer transition-all ${paymentMethod === 'card' ? 'bg-emerald-50/70 border-emerald-500 font-bold text-emerald-900' : 'border-slate-100 hover:bg-slate-50'}`}>
                         <input type="radio" name="payMethod" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} />
@@ -865,7 +1101,7 @@ export default function App() {
 
                       {paymentMethod === 'upi_qr' && (
                         <div className="space-y-3 flex flex-col items-center text-center">
-                          <div className="text-[11px] font-bold text-slate-500">Scan QR Code or hit button to open live processing overlay window</div>
+                          <div className="text-[11px] font-bold text-slate-500">Scan QR Code or hit button to invoke active escrow protection overlay</div>
                           <div className="bg-white p-3 rounded-xl border shadow-sm space-y-1">
                             <div className="bg-slate-950 p-2 rounded-lg inline-block">
                               <div className="w-24 h-24 bg-white flex flex-wrap p-1 items-center justify-center relative">
@@ -902,7 +1138,7 @@ export default function App() {
 
                       <div className="pt-4 border-t flex justify-end">
                         <button type="submit" className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black text-xs px-8 py-3 rounded-xl uppercase tracking-widest shadow shadow-emerald-600/20">
-                          {paymentMethod === 'cod' ? '🔒 Book Consignment Order' : '💳 Invoke Razorpay Gateway'}
+                          {paymentMethod === 'cod' ? '🔒 Book Consignment Order' : '💳 Invoke Razorpay Escrow'}
                         </button>
                       </div>
                     </div>
@@ -916,14 +1152,14 @@ export default function App() {
                     {paymentMethod === 'cod' ? '⏳' : '✓'}
                   </div>
                   <div className="space-y-1">
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">{paymentMethod === 'cod' ? 'Consignment Order Staged!' : 'Payment Successfully Captured!'}</h3>
-                    <p className="text-xs text-slate-500 max-w-sm mx-auto">Your freight shipment request data parameters are saved into local component state storage maps.</p>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">{paymentMethod === 'cod' ? 'Consignment Order Staged!' : 'Escrow Deposit Successfully Locked!'}</h3>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto">Your cargo shipment data is compiled into local state storage. Check the Analytics tab to monitor weather risks.</p>
                   </div>
                   <div className="bg-slate-50 border rounded-xl p-5 text-left text-xs space-y-3 shadow-inner">
                     <div className="font-bold text-slate-900 border-b pb-2 flex justify-between items-center text-[10px] uppercase tracking-wider">
                       <span>📦 Official Cargo Manifest</span>
                       <span className={`font-black px-2 py-0.5 rounded text-[9px] border ${paymentMethod === 'cod' ? 'text-amber-700 bg-amber-100 border-amber-200/50' : 'text-emerald-700 bg-emerald-100 border-emerald-200/50'}`}>
-                        {paymentMethod === 'cod' ? 'PENDING ⏳' : 'SUCCESSFUL ✅'}
+                        {paymentMethod === 'cod' ? 'PENDING ⏳' : 'HELD IN ESCROW 🔐'}
                       </span>
                     </div>
                     <div className="space-y-1 text-slate-700">
