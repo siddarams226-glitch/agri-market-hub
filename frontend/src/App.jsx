@@ -941,6 +941,22 @@ export default function App() {
           </div>
         )}
       </main>
-    </div>
+      </main>
+
+      {/* FLOATING TOAST POPUP NOTIFICATION ACCORDION CONTAINER */}
+      {toast.show && (
+        <div className={`fixed bottom-5 right-5 z-50 flex items-center space-x-2 px-4 py-3 rounded-xl shadow-xl border text-xs font-bold animate-slideIn ${
+          toast.type === 'success' ? 'bg-emerald-900 border-emerald-700 text-emerald-100' :
+          toast.type === 'warning' ? 'bg-amber-900 border-amber-700 text-amber-100' :
+          toast.type === 'info' ? 'bg-slate-900 border-slate-800 text-slate-100' :
+          'bg-rose-900 border-rose-700 text-rose-100'
+        }`}>
+          <span>{toast.message}</span>
+          <button onClick={() => setToast({ ...toast, show: false })} className="ml-2 text-sm opacity-60 hover:opacity-100">&times;</button>
+        </div>
+    
+
+    </div> 
   );
+}
 }
