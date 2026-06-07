@@ -940,8 +940,8 @@ export default function App() {
             )}
           </div>
         )}
-      </main>
-      </main>
+     )}
+      </main> {/* Keep only this ONE main closing tag */}
 
       {/* FLOATING TOAST POPUP NOTIFICATION ACCORDION CONTAINER */}
       {toast.show && (
@@ -954,9 +954,8 @@ export default function App() {
           <span>{toast.message}</span>
           <button onClick={() => setToast({ ...toast, show: false })} className="ml-2 text-sm opacity-60 hover:opacity-100">&times;</button>
         </div>
-    
+      )}
 
-    </div> 
+    </div>
   );
-}
 }
