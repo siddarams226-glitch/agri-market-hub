@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-// Hardcoded initial data with realistic image fallbacks, soil technical metrics, and new user ratings
+// Enhanced initial data featuring realistic crop video assets for multimedia validation
 const INITIAL_PRODUCTS = [
   { 
     id: 1, 
@@ -11,8 +11,9 @@ const INITIAL_PRODUCTS = [
     quantity: 15, 
     location: 'Gulbarga, Karnataka', 
     farmer: 'Siddaram BN',
-    isFarmerVerified: true, // Pre-verified regional anchor
+    isFarmerVerified: true, 
     image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-handful-of-raw-rice-grains-falling-41743-large.mp4',
     soilPh: '6.5 (Optimal)',
     soilNPK: 'N: 45, P: 30, K: 40 (High Fertility)',
     rating: 4.8
@@ -28,6 +29,7 @@ const INITIAL_PRODUCTS = [
     farmer: 'Siddaram BN',
     isFarmerVerified: true,
     image: 'https://images.unsplash.com/photo-1547058881-aa0edd92aab3?auto=format&fit=crop&w=600&q=80',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-pouring-lentils-from-a-scoop-41724-large.mp4',
     soilPh: '7.2 (Neutral-Calcareous)',
     soilNPK: 'N: 20, P: 45, K: 35 (Excellent Phosphate)',
     rating: 4.9
@@ -43,6 +45,7 @@ const INITIAL_PRODUCTS = [
     farmer: 'Rajesh M.',
     isFarmerVerified: false,
     image: 'https://images.unsplash.com/photo-1574325131876-a7999d943b4d?auto=format&fit=crop&w=600&q=80',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-wind-blowing-in-a-wheat-field-41687-large.mp4',
     soilPh: '6.8 (Optimal loamy)',
     soilNPK: 'N: 50, P: 35, K: 30 (Rich Nitrogen)',
     rating: 4.6
@@ -58,6 +61,7 @@ const INITIAL_PRODUCTS = [
     farmer: 'Anand Kumar',
     isFarmerVerified: true,
     image: 'https://images.unsplash.com/photo-1595855759920-86582396756a?auto=format&fit=crop&w=600&q=80',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-fresh-tomatoes-with-water-drops-41681-large.mp4',
     soilPh: '6.2 (Slightly Acidic)',
     soilNPK: 'N: 35, P: 40, K: 45 (Good)',
     rating: 4.4
@@ -73,6 +77,7 @@ const INITIAL_PRODUCTS = [
     farmer: 'Anand Kumar',
     isFarmerVerified: true,
     image: 'https://images.unsplash.com/photo-1598170845058-32b996a69427?auto=format&fit=crop&w=600&q=80',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-chopping-fresh-carrots-on-a-wooden-board-41699-large.mp4',
     soilPh: '6.0 (Slightly Acidic)',
     soilNPK: 'N: 30, P: 30, K: 50 (High Potassium)',
     rating: 4.7
@@ -88,6 +93,7 @@ const INITIAL_PRODUCTS = [
     farmer: 'Rajesh M.',
     isFarmerVerified: false,
     image: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=600&q=80',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-fresh-red-apples-stacked-in-a-market-41716-large.mp4',
     soilPh: '5.8 (Moderate)',
     soilNPK: 'N: 20, P: 25, K: 50 (Rich Potassium)',
     rating: 4.9
@@ -106,9 +112,12 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  // Verification System States ('unverified' | 'uploading' | 'pending' | 'verified')
+  // Verification System States
   const [verificationStatus, setVerificationStatus] = useState('unverified');
   const [uploadedFileName, setUploadedFileName] = useState('');
+
+  // Video Inspection Player Modal State
+  const [activeVideoUrl, setActiveVideoUrl] = useState(null);
 
   // Payment Gateway Interface Overlays
   const [showPaymentOverlay, setShowPaymentOverlay] = useState(false);
@@ -186,20 +195,15 @@ export default function App() {
     setUploadedFileName(file.name);
     setVerificationStatus('uploading');
 
-    // Step 1: Simulate uploading to secure cloud engine bucket
     setTimeout(() => {
       setVerificationStatus('pending');
       setToast({ show: true, message: '⏳ Documents staged. Automated KYC validation run initialized.', type: 'info' });
       
-      // Step 2: Simulate secondary admin audit approval loop sequence
       setTimeout(() => {
         setVerificationStatus('verified');
-        
-        // Dynamically update existing products belonging to this session user
         setProducts(prevProducts => 
           prevProducts.map(p => p.farmer.includes('Siddaram') ? { ...p, isFarmerVerified: true } : p)
         );
-
         setToast({ show: true, message: '✅ Congratulations! Your identity is lab-verified across the node index.', type: 'success' });
       }, 3500);
 
@@ -209,7 +213,7 @@ export default function App() {
   // Product Creation Handlers
   const [formData, setFormData] = useState({
     name: '', category: 'Grains', price: '', unit: 'Quintal', quantity: '', location: '',
-    image: '', soilPh: '6.5', soilNPK: 'N: 40, P: 30, K: 30', rating: '4.5'
+    image: '', videoUrl: '', soilPh: '6.5', soilNPK: 'N: 40, P: 30, K: 30', rating: '4.5'
   });
 
   const handleInputChange = (e) => {
@@ -227,15 +231,16 @@ export default function App() {
       quantity: Number(formData.quantity) || 10,
       location: formData.location,
       farmer: ownerProfile.founderName + ' (You)',
-      isFarmerVerified: (verificationStatus === 'verified'), // Automatically matches verification status
+      isFarmerVerified: (verificationStatus === 'verified'),
       image: formData.image || 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&w=600&q=80',
+      videoUrl: formData.videoUrl || 'https://assets.mixkit.co/videos/preview/mixkit-wind-blowing-in-a-wheat-field-41687-large.mp4',
       soilPh: `${formData.soilPh} (Declared)`,
       soilNPK: formData.soilNPK,
       rating: parseFloat(formData.rating) || 4.5
     };
 
     setProducts([newProduct, ...products]);
-    setFormData({ name: '', category: 'Grains', price: '', unit: 'Quintal', quantity: '', location: '', image: '', soilPh: '6.5', soilNPK: 'N: 40, P: 30, K: 30', rating: '4.5' });
+    setFormData({ name: '', category: 'Grains', price: '', unit: 'Quintal', quantity: '', location: '', image: '', videoUrl: '', soilPh: '6.5', soilNPK: 'N: 40, P: 30, K: 30', rating: '4.5' });
     
     setToast({ show: true, message: `🎉 "${formData.name}" published successfully!`, type: 'success' });
     setActiveTab('marketplace');
@@ -257,13 +262,12 @@ export default function App() {
     setToast({ show: true, message: `🗑️ Removed "${item?.name || 'Item'}" from cart.`, type: 'info' });
   };
 
-  // Calculations & Analytics Math Expressions
+  // Math Metrics Logic
   const cartSubtotal = cart.reduce((acc, item) => acc + item.price, 0);
   const deliveryCharges = cartSubtotal > 10000 ? 0 : 150;
   const platformFee = 49;
   const totalPayable = cartSubtotal + deliveryCharges + platformFee;
 
-  // Real-time Dashboard Analytics Aggregates
   const totalMarketValuation = products.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const averageCropPrice = Math.round(products.reduce((acc, item) => acc + item.price, 0) / products.length);
   const totalStockVolume = products.reduce((acc, item) => acc + item.quantity, 0);
@@ -276,14 +280,11 @@ export default function App() {
     setPaymentDetails({ ...paymentDetails, [e.target.name]: e.target.value });
   };
 
-  // Payment Execution Stream Router
   const handleOrderSubmission = (e) => {
     e.preventDefault();
     if (paymentMethod === 'cod') {
-      // Cash on delivery bypasses live banking system overlay simulation
       setCheckoutStep('success');
     } else {
-      // Trigger live Stripe/Razorpay style modal overlay interface response
       setShowPaymentOverlay(true);
     }
   };
@@ -304,7 +305,6 @@ export default function App() {
     setActiveTab('marketplace');
   };
 
-  // Filter Combinator logic (Search Box + Category Tabs)
   const filteredProducts = products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.location.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
@@ -315,7 +315,6 @@ export default function App() {
 
   // ================= RENDER INTERFACES =================
 
-  // LOGIN SCREEN (CREATIVE DARK MESH DESIGN)
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 font-sans antialiased relative overflow-hidden">
@@ -374,10 +373,10 @@ export default function App() {
       <div className="absolute top-[15%] right-[-10%] w-[40rem] h-[40rem] bg-emerald-100/40 rounded-full blur-[130px] pointer-events-none z-0"></div>
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:5rem_5rem] opacity-30 pointer-events-none z-0"></div>
 
-      {/* STRIPE / RAZORPAY INTEGRATED DIALOG SIMULATION OVERLAY BOX */}
+      {/* RAZORPAY MODAL INTERFACE OVERLAY */}
       {showPaymentOverlay && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] border border-slate-200 overflow-hidden animate-scaleIn">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] border border-slate-200 overflow-hidden">
             <div className="bg-slate-900 p-4 text-white flex justify-between items-center">
               <div className="flex items-center space-x-2">
                 <span className="text-xs bg-emerald-500 px-2 py-0.5 rounded font-bold text-slate-950">SECURE LINK</span>
@@ -412,9 +411,26 @@ export default function App() {
                   <button onClick={executeSimulatedGatewayCharge} className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-3 px-4 rounded-xl shadow-md tracking-wider uppercase transition-transform active:scale-[0.99]">
                     Simulate Payment Authorization 💳
                   </button>
-                  <p className="text-[10px] text-slate-400">By clicking above, you bypass live bank authorization protocols with an instantaneous mock success handshake.</p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MULTIMEDIA VIDEO INSPECTION OVERLAY MODAL */}
+      {activeVideoUrl && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl border border-slate-800 relative">
+            <div className="p-4 bg-slate-950/60 border-b border-slate-800 flex justify-between items-center text-white text-xs">
+              <span className="font-bold flex items-center gap-1.5 text-emerald-400">
+                <span className="inline-block h-2 w-2 rounded-full bg-rose-500 animate-pulse"></span> 
+                LIVE FIELD INSPECTION VIDEO ENGINE
+              </span>
+              <button onClick={() => setActiveVideoUrl(null)} className="text-slate-400 hover:text-white text-lg font-bold bg-slate-800 px-2 py-0.5 rounded-lg">&times;</button>
+            </div>
+            <div className="bg-black aspect-video flex items-center justify-center">
+              <video src={activeVideoUrl} autoPlay controls loop className="w-full h-full object-contain"></video>
             </div>
           </div>
         </div>
@@ -470,10 +486,18 @@ export default function App() {
                   <div>
                     <div className="relative h-44 bg-slate-100 overflow-hidden">
                       <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      
                       <div className="absolute top-2 left-2 flex items-center space-x-1.5">
                         <span className="text-[10px] font-bold uppercase bg-slate-900/80 text-white px-2 py-0.5 rounded shadow">{product.category}</span>
                         <span className="text-[10px] font-bold bg-amber-400 text-slate-900 px-1.5 py-0.5 rounded shadow">⭐ {product.rating}</span>
                       </div>
+
+                      {/* MULTIMEDIA VIDEO TRIGGER LINK */}
+                      {product.videoUrl && (
+                        <button onClick={() => setActiveVideoUrl(product.videoUrl)} className="absolute bottom-2 right-2 bg-slate-950/80 text-white font-bold text-[10px] px-2.5 py-1.5 rounded-lg shadow-md hover:bg-emerald-600 transition-colors flex items-center space-x-1 backdrop-blur-sm border border-slate-800">
+                          <span>📹 Inspect Crop Video</span>
+                        </button>
+                      )}
                     </div>
 
                     <div className="p-4 space-y-2">
@@ -485,7 +509,7 @@ export default function App() {
                       <div className="flex items-center space-x-2">
                         <p className="text-[11px] text-slate-400">Grower: <span className="text-slate-600 font-medium">{product.farmer}</span></p>
                         {product.isFarmerVerified && (
-                          <span className="text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded-md shadow-sm flex items-center gap-0.5">
+                          <span className="text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded-md shadow-sm">
                             ✓ VERIFIED GROWER
                           </span>
                         )}
@@ -510,7 +534,7 @@ export default function App() {
                     </div>
                   </div>
                   <div className="p-4 pt-0">
-                    <button onClick={() => addToCart(product)} className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs py-2.5 px-4 rounded-lg shadowactive:scale-[0.97] transition-all">
+                    <button onClick={() => addToCart(product)} className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs py-2.5 px-4 rounded-lg shadow active:scale-[0.97] transition-all">
                       🌱 Procure Asset Batch
                     </button>
                   </div>
@@ -567,11 +591,9 @@ export default function App() {
           </div>
         )}
 
-        {/* VIEW 3: FARMER PORTAL & ID VERIFICATION INTERFACE */}
+        {/* VIEW 3: FARMER PORTAL */}
         {activeTab === 'list-crop' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-            
-            {/* LEFT 2 COLUMNS: HARVEST LOG ENTRY */}
             <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-md relative">
               <h2 className="text-xl font-bold text-slate-900 mb-1 tracking-tight">List Harvest Batch Assets</h2>
               <p className="text-xs text-slate-400 mb-5">Provide clear crop showcase photos and verified soil parameters to setup buyer credibility.</p>
@@ -601,8 +623,8 @@ export default function App() {
                     <input type="url" name="image" value={formData.image} onChange={handleInputChange} placeholder="Paste reference photo link" className="w-full p-2.5 border border-slate-200 rounded-lg bg-white" />
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Batch Quality Rating (1.0 - 5.0)</label>
-                    <input type="number" step="0.1" max="5" min="1" name="rating" value={formData.rating} onChange={handleInputChange} className="w-full p-2.5 border border-slate-200 rounded-lg bg-white" />
+                    <label className="block font-bold text-slate-700 mb-1">Batch Inspection Video Link (URL)</label>
+                    <input type="url" name="videoUrl" value={formData.videoUrl} onChange={handleInputChange} placeholder="Paste sample video URL (.mp4)" className="w-full p-2.5 border border-slate-200 rounded-lg bg-white" />
                   </div>
                 </div>
                 <div className="bg-amber-50/60 p-4 rounded-xl border border-amber-200/70 grid grid-cols-2 gap-4 shadow-inner">
@@ -628,9 +650,15 @@ export default function App() {
                     </select>
                   </div>
                 </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Total Stock Load Volume</label>
-                  <input type="number" required name="quantity" value={formData.quantity} onChange={handleInputChange} className="w-full p-2.5 border border-slate-200 rounded-lg bg-white" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Total Stock Load Volume</label>
+                    <input type="number" required name="quantity" value={formData.quantity} onChange={handleInputChange} className="w-full p-2.5 border border-slate-200 rounded-lg bg-white" />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Initial Batch Rating (1.0 - 5.0)</label>
+                    <input type="number" step="0.1" max="5" min="1" name="rating" value={formData.rating} onChange={handleInputChange} className="w-full p-2.5 border border-slate-200 rounded-lg bg-white" />
+                  </div>
                 </div>
                 <div className="pt-4 flex justify-end border-t border-slate-100">
                   <button type="submit" className="px-5 py-2.5 bg-gradient-to-r from-emerald-700 to-teal-700 text-white font-bold rounded-lg shadow">Publish Crop Record</button>
@@ -638,14 +666,12 @@ export default function App() {
               </form>
             </div>
 
-            {/* RIGHT COLUMN: REVENUE & DYNAMIC KYC FILE INPUT */}
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm text-xs space-y-5">
               <div className="border-b border-slate-100 pb-3">
                 <h3 className="font-bold text-slate-900 text-sm">Identity Verification Engine</h3>
                 <p className="text-[10px] text-slate-400 mt-0.5">Upload a copy of your regional agricultural registry certificate or ID card.</p>
               </div>
 
-              {/* Status Indicator Router */}
               {verificationStatus === 'unverified' && (
                 <div className="space-y-3">
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center text-slate-500 font-medium">
@@ -691,7 +717,6 @@ export default function App() {
                 </div>
               )}
             </div>
-
           </div>
         )}
 
@@ -940,8 +965,7 @@ export default function App() {
             )}
           </div>
         )}
-     )}
-      </main> {/* Keep only this ONE main closing tag */}
+      </main>
 
       {/* FLOATING TOAST POPUP NOTIFICATION ACCORDION CONTAINER */}
       {toast.show && (
